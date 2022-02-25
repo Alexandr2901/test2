@@ -4,12 +4,12 @@ services:
   frontend:
 #    container_name: nuxt
     build:
-      context: ./nuxt_example/.
+      context: ./nuxt/.
       target: 'develop-stage'
     ports:
       - '3000:3000'
     volumes:
-      - './nuxt_example/.:/app'
+      - './nuxt/.:/app'
       - '/app/node_modules/'
     command: [ 'npm', 'run', 'dev' ]
   lumen-main:
@@ -17,13 +17,13 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./lumen_example/.:/var/www/html
-      - ./lumen_example/.:/src
+      - ./lumen_main/.:/var/www/html
+      - ./lumen_main/.:/src
     build:
-      context: ./lumen_example/.
+      context: ./lumen_main/.
       dockerfile: ./Dockerfile
     env_file:
-      - ./lumen_example/.env
+      - ./lumen_main/.env
     command: php -S 0.0.0.0:8000 -t public
     networks:
       - main
@@ -37,7 +37,7 @@ services:
     #    container_name: lumen-postgres
     image: 'postgres:latest'
     env_file:
-      - ./lumen_example/.env
+      - ./lumen_main/.env
     ports:
       - '${FORWARD_DB_PORT:-5432}:5432'
     environment:
@@ -75,7 +75,7 @@ services:
     ports:
       - "8001:8000"
     volumes:
-      #      - ./lumen_example/.:/var/www/html
+      #      - ./lumen_main/.:/var/www/html
       - ./lumen_auth/.:/var/www/html
       - ./lumen_auth/.:/src
     #          - /var/www/html/vendor/
