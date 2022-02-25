@@ -3,7 +3,7 @@
 	url = git@github.com:Alexandr2901/lumen_main.git
 [submodule "lumen_auth"]
 	path = lumen_auth
-	url = git@github.com:Alexandr2901/lumen_auth.git
+	url = https://github.com/Alexandr2901/lumen_auth.git
 [submodule "nuxt"]
 	path = nuxt
 	url = git@github.com:Alexandr2901/nuxt.git
