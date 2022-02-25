@@ -1,0 +1,134 @@
+version: '3.5'
+
+services:
+  frontend:
+#    container_name: nuxt
+    build:
+      context: ./nuxt_example/.
+      target: 'develop-stage'
+    ports:
+      - '3000:3000'
+    volumes:
+      - './nuxt_example/.:/app'
+      - '/app/node_modules/'
+    command: [ 'npm', 'run', 'dev' ]
+  lumen-main:
+    #    container_name: lumen-app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./lumen_example/.:/var/www/html
+      - ./lumen_example/.:/src
+    build:
+      context: ./lumen_example/.
+      dockerfile: ./Dockerfile
+    env_file:
+      - ./lumen_example/.env
+    command: php -S 0.0.0.0:8000 -t public
+    networks:
+      - main
+    restart: always
+    #    networks:
+    #      - auth
+    depends_on:
+      - pgsql-main
+      - redis-main
+  pgsql-main:
+    #    container_name: lumen-postgres
+    image: 'postgres:latest'
+    env_file:
+      - ./lumen_example/.env
+    ports:
+      - '${FORWARD_DB_PORT:-5432}:5432'
+    environment:
+      PGPASSWORD: '${DB_PASSWORD:-secret}'
+      POSTGRES_DB: '${DB_DATABASE:-lumen}'
+      POSTGRES_USER: '${DB_USERNAME:-postgres}'
+      POSTGRES_PASSWORD: '${DB_PASSWORD:-secret}'
+    #      PGPASSWORD: '${DB_PASSWORD}'
+    #      POSTGRES_DB: '${DB_DATABASE}'
+    #      POSTGRES_USER: '${DB_USERNAME}'
+    #      POSTGRES_PASSWORD: '${DB_PASSWORD}'
+    volumes:
+      - 'main-pgsql:/var/lib/postgresql/data'
+    networks:
+      - main
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "${DB_DATABASE:-lumen}", "-U", "${DB_USERNAME:-postgres}" ]
+      retries: 3
+      timeout: 5s
+  redis-main:
+    #    container_name: lumen-redis
+    image: 'redis:alpine'
+    ports:
+      - '${FORWARD_REDIS_PORT:-6379}:6379'
+    volumes:
+      - 'main-redis:/data'
+    networks:
+      - main
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      retries: 3
+      timeout: 5s
+  lumen-auth:
+    container_name: lumen-auth
+    ports:
+      - "8001:8000"
+    volumes:
+      #      - ./lumen_example/.:/var/www/html
+      - ./lumen_auth/.:/var/www/html
+      - ./lumen_auth/.:/src
+    #          - /var/www/html/vendor/
+    build: ./lumen_auth/.
+    command: php -S 0.0.0.0:8000 -t public
+    restart: always
+    networks:
+      - auth
+    depends_on:
+      - pgsql-auth
+      - redis-auth
+  pgsql-auth:
+    #      container_name: auth-postgres
+    image: 'postgres:latest'
+    ports:
+      - '${FORWARD_DB_PORT:-5433}:5432'
+    environment:
+      PGPASSWORD: '${DB_PASSWORD:-secret}'
+      POSTGRES_DB: '${DB_DATABASE:-lumen}'
+      POSTGRES_USER: '${DB_USERNAME:-postgres}'
+      POSTGRES_PASSWORD: '${DB_PASSWORD:-secret}'
+    volumes:
+      - 'auth-pgsql:/var/lib/postgresql/data'
+    networks:
+      - auth
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "${DB_DATABASE:-lumen}", "-U", "${DB_USERNAME:-postgres}" ]
+      retries: 3
+      timeout: 5s
+  redis-auth:
+    #      container_name: auth-redis
+    image: 'redis:alpine'
+    ports:
+      - '${FORWARD_REDIS_PORT:-6380}:6379'
+    volumes:
+      - 'auth-redis:/data'
+    networks:
+      - auth
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      retries: 3
+      timeout: 5s
+networks:
+  main:
+    driver: bridge
+  auth:
+    driver: bridge
+volumes:
+  main-pgsql:
+    driver: local
+  main-redis:
+    driver: local
+  auth-pgsql:
+    driver: local
+  auth-redis:
+    driver: local
