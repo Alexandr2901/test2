@@ -19,17 +19,12 @@ services:
     volumes:
       - ./lumen_main/.:/var/www/html
       - ./lumen_main/.:/src
-    build:
-      context: ./lumen_main/.
-      dockerfile: ./Dockerfile
-    env_file:
-      - ./lumen_main/.env
+      - /var/www/html/vendor/
+    build: ./lumen_main/.
     command: php -S 0.0.0.0:8000 -t public
     networks:
       - main
     restart: always
-    #    networks:
-    #      - auth
     depends_on:
       - pgsql-main
       - redis-main
@@ -71,19 +66,18 @@ services:
       retries: 3
       timeout: 5s
   lumen-auth:
-    container_name: lumen-auth
+#    container_name: lumen-auth
     ports:
       - "8001:8000"
     volumes:
-      #      - ./lumen_main/.:/var/www/html
       - ./lumen_auth/.:/var/www/html
       - ./lumen_auth/.:/src
-    #          - /var/www/html/vendor/
+      - /var/www/html/vendor/
     build: ./lumen_auth/.
     command: php -S 0.0.0.0:8000 -t public
     restart: always
     networks:
-      - auth
+      - main
     depends_on:
       - pgsql-auth
       - redis-auth
@@ -100,7 +94,7 @@ services:
     volumes:
       - 'auth-pgsql:/var/lib/postgresql/data'
     networks:
-      - auth
+      - main
     healthcheck:
       test: [ "CMD", "pg_isready", "-q", "-d", "${DB_DATABASE:-lumen}", "-U", "${DB_USERNAME:-postgres}" ]
       retries: 3
@@ -113,15 +107,13 @@ services:
     volumes:
       - 'auth-redis:/data'
     networks:
-      - auth
+      - main
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       retries: 3
       timeout: 5s
 networks:
   main:
-    driver: bridge
-  auth:
     driver: bridge
 volumes:
   main-pgsql:
